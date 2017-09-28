@@ -36,18 +36,6 @@ ClanHandler = class ClanHandler extends Handler
     instance.set 'dashboardType', 'premium' if req.body?.type is 'private'
     instance
 
-  delete: (req, res, clanID) ->
-    @getDocumentForIdOrSlug clanID, (err, clan) =>
-      return @sendDatabaseError res, err if err
-      return @sendNotFoundError res unless clan
-      return @sendForbiddenError res unless @hasAccessToDocument(req, clan)
-      memberIDs = clan.get('members')
-      Clan.remove {_id: clan.get('_id')}, (err) =>
-        return @sendDatabaseError res, err if err
-        User.update {_id: {$in: memberIDs}}, {$pull: {clans: clan.get('_id')}}, {multi: true}, (err) =>
-          return @sendDatabaseError(res, err) if err
-          @sendNoContent(res)
-          AnalyticsLogEvent.logEvent req.user, 'Clan deleted', clanID: clanID, type: clan.get('type')
 
   getByRelationship: (req, res, args...) ->
     return @joinClan(req, res, args[0]) if args[1] is 'join'

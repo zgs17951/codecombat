@@ -1,4 +1,5 @@
 Clan = require '../../../server/models/Clan'
+AnalyticsLogEvent = require '../../../server/models/AnalyticsLogEvent'
 User = require '../../../server/models/User'
 request = require '../request'
 utils = require '../utils'
@@ -288,7 +289,7 @@ describe 'PUT /db/clan/:clanHandle/remove/:memberHandle', ->
     expect(res.statusCode).toBe(403)
 
 
-describe 'DELETE /db/clan/:handle', ->
+fdescribe 'DELETE /db/clan/:handle', ->
 
   beforeEach utils.wrap ->
     @ownerUser = yield utils.initUser()
@@ -307,8 +308,9 @@ describe 'DELETE /db/clan/:handle', ->
     expect(@ownerUser.get('clans').length).toBe(1)
     expect(@joinerUser.get('clans').length).toBe(1)
     @url = utils.getUrl("/db/clan/#{@clan.id}")
+    yield utils.clearModels([AnalyticsLogEvent])
 
-  it 'deletes the clan', utils.wrap ->
+  it 'deletes the clan and logs an event', utils.wrap ->
     yield utils.loginUser(@ownerUser)
     [res] = yield request.delAsync { @url, json: true }
     expect(res.statusCode).toBe(204)
@@ -316,6 +318,10 @@ describe 'DELETE /db/clan/:handle', ->
     @joinerUser = yield User.findById(@joinerUser.id)
     expect(@ownerUser.get('clans').length).toBe(0)
     expect(@joinerUser.get('clans').length).toBe(0)
+    events = yield AnalyticsLogEvent.find()
+    expect(events.length).toBe(1)
+    expect(events[0].get('properties.clanID')).toBe(@clan.id)
+    expect(events[0].get('properties.type')).toBe(@clan.get('type'))
 
   it 'returns 401 if anonymous', utils.wrap ->
     yield utils.logout()
