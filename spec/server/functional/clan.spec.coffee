@@ -360,3 +360,42 @@ describe 'DELETE /db/clan/:handle', ->
     [res] = yield request.delAsync { url, json: true }
     expect(res.statusCode).toBe(404)
 
+    
+describe 'GET /db/clan/:handle/member_achievements', ->
+  beforeEach utils.wrap ->
+    @ownerUser = yield utils.initUser()
+    yield utils.loginUser(@ownerUser)
+    @clan = yield utils.makeClan({type: 'public'})
+    @url = utils.getUrl("/db/clan/#{@clan.id}/join")
+    @joinerUser = yield utils.initUser()
+    yield utils.loginUser(@joinerUser)
+    url = utils.getUrl("/db/clan/#{@clan.id}/join")
+    [res] = yield request.putAsync { url, json: true }
+    expect(res.statusCode).toBe(200)
+    @adminUser = yield utils.initAdmin()
+    yield utils.loginUser(@adminUser)
+    @achievement = yield utils.makeAchievement()
+    @earnedAchievement1 = yield utils.makeEarnedAchievement({}, {@achievement, user: @joinerUser})
+    @earnedAchievement2 = yield utils.makeEarnedAchievement({}, {@achievement, user: @ownerUser})
+  
+  it 'returns all earned achievements for all clan members', utils.wrap ->
+    url = utils.getUrl("/db/clan/#{@clan.id}/member_achievements")
+    [res] = yield request.getAsync({url, json: true})
+    expect(res.statusCode).toBe(200)
+    expect(res.body.length).toBe(2)
+    expect(_.find(res.body, { achievementName: @achievement.get('name'), user: @joinerUser.id })).toBeTruthy()
+    expect(_.find(res.body, { achievementName: @achievement.get('name'), user: @ownerUser.id })).toBeTruthy()
+
+  # This test takes too long to be worth running each time.
+  xit 'returns at most the achievements for 200 members', utils.wrap ->
+    url = utils.getUrl("/db/clan/#{@clan.id}/join")
+    for i in _.range(0, 300)
+      user = yield utils.initUser()
+      yield utils.loginUser(user)
+      [res] = yield request.putAsync { url, json: true }
+      expect(res.statusCode).toBe(200)
+      earnedAchievement = yield utils.makeEarnedAchievement({}, {@achievement, user})
+    url = utils.getUrl("/db/clan/#{@clan.id}/member_achievements")
+    [res] = yield request.getAsync({url, json: true})
+    expect(res.statusCode).toBe(200)
+    expect(res.body.length).toBe(200)

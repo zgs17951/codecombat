@@ -38,27 +38,12 @@ ClanHandler = class ClanHandler extends Handler
 
 
   getByRelationship: (req, res, args...) ->
-    return @getMemberAchievements(req, res, args[0]) if args[1] is 'member_achievements'
     return @getMembers(req, res, args[0]) if args[1] is 'members'
     return @getMemberSessions(req, res, args[0]) if args[1] is 'member_sessions'
     return @getPublicClans(req, res) if args[1] is 'public'
     return @removeMember(req, res, args[0], args[2]) if args.length is 3 and args[1] is 'remove'
     super(arguments...)
 
-  getMemberAchievements: (req, res, clanID) ->
-    Clan.findById clanID, (err, clan) =>
-      return @sendDatabaseError(res, err) if err
-      return @sendNotFoundError(res) unless clan
-      memberIDs = _.map clan.get('members') ? [], (memberID) -> memberID.toHexString?() or memberID
-      User.find {_id: {$in: memberIDs}}, 'nameLower', {limit: memberLimit}, (err, users) =>
-        return @sendDatabaseError(res, err) if err
-        memberIDs = []
-        for user in users
-          memberIDs.push user.id
-        EarnedAchievement.find {user: {$in: memberIDs}}, 'achievementName user', (err, documents) =>
-          return @sendDatabaseError(res, err) if err?
-          cleandocs = (EarnedAchievementHandler.formatEntity(req, doc) for doc in documents)
-          @sendSuccess(res, cleandocs)
 
   getMembers: (req, res, clanID) ->
     Clan.findById clanID, (err, clan) =>

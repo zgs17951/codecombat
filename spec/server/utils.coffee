@@ -11,6 +11,7 @@ User = require '../../server/models/User'
 Level = require '../../server/models/Level'
 LevelSession = require '../../server/models/LevelSession'
 Achievement = require '../../server/models/Achievement'
+EarnedAchievement = require '../../server/models/EarnedAchievement'
 Campaign = require '../../server/models/Campaign'
 Product = require '../../server/models/Product'
 { productStubs } = require '../../server/middleware/products'
@@ -240,6 +241,18 @@ module.exports = mw =
       return done(err) if err
       expect(res.statusCode).toBe(201)
       Achievement.findById(res.body._id).exec done
+      
+  makeEarnedAchievement: co.wrap (data, sources) ->
+    data ?= {}
+    sources ?= {}
+    if sources.user and not data.user
+      data.user = sources.user.id
+    if sources.achievement and not data.achievement
+      data.achievement = sources.achievement.id
+      data.achievementName = sources.achievement.get 'name'
+    ea = new EarnedAchievement(data)
+    yield ea.save()
+    return ea
 
   makeCampaign: Promise.promisify (data, sources, done) ->
     args = Array.from(arguments)

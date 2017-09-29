@@ -4,6 +4,9 @@ database = require '../commons/database'
 Clan = require '../models/Clan'
 User = require '../models/User'
 AnalyticsLogEvent = require '../models/AnalyticsLogEvent'
+EarnedAchievement = require '../models/EarnedAchievement'
+
+memberLimit = 200
 
 deleteClan = wrap (req, res) ->
   clan = yield database.getDocFromHandle(req, Clan)
@@ -49,8 +52,22 @@ leaveClan = wrap (req, res) ->
   res.send(clan.toObject({req}))
   AnalyticsLogEvent.logEvent req.user, 'Clan left', clanID: clan._id, type: clan.get('type')
 
+
+getMemberAchievements = wrap (req, res) ->
+  clan = yield database.getDocFromHandle(req, Clan)
+  if not clan
+    throw new errors.NotFound('Clan not found.')
+    
+  memberIDs = _.map clan.get('members') ? [], (memberID) -> memberID.toHexString?() or memberID
+  memberIDs = memberIDs.slice(0, memberLimit)
+  documents = yield EarnedAchievement.find {user: {$in: memberIDs}}, 'achievementName user'
+  cleandocs = (doc.toObject({req}) for doc in documents)
+  res.send(cleandocs)
+
+        
   
 module.exports = {
+  getMemberAchievements
   deleteClan
   joinClan
   leaveClan
