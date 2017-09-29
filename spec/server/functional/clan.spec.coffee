@@ -208,8 +208,9 @@ describe 'PUT /db/clan/:handle/leave', ->
     expect(@ownerUser.get('clans').length).toBe(1)
     expect(@joinerUser.get('clans').length).toBe(1)
     @url = utils.getUrl("/db/clan/#{@clan.id}/leave")
+    yield utils.clearModels([AnalyticsLogEvent])
 
-  it 'leaves the clan, unless you are the creator', utils.wrap ->
+  it 'leaves the clan, unless you are the creator, and creates an event', utils.wrap ->
     yield utils.loginUser(@joinerUser)
     [res] = yield request.putAsync { @url, json: true }
     expect(res.statusCode).toBe(200)
@@ -221,6 +222,12 @@ describe 'PUT /db/clan/:handle/leave', ->
     expect(@clan.get('members')[0].equals(@ownerUser._id)).toBe(true)
     expect(@ownerUser.get('clans').length).toBe(1)
     expect(@joinerUser.get('clans')).toBeUndefined()
+
+    events = yield AnalyticsLogEvent.find()
+    expect(events.length).toBe(1)
+    expect(events[0].get('event')).toBe('Clan left')
+    expect(events[0].get('properties.clanID').equals(@clan._id)).toBe(true)
+    expect(events[0].get('properties.type')).toBe(@clan.get('type'))
 
     yield utils.loginUser(@ownerUser)
     [res] = yield request.putAsync { @url, json: true }

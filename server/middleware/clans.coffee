@@ -31,12 +31,27 @@ joinClan = wrap (req, res) ->
   unless clan.get('type') is 'public' or req.user.isPremium()
     throw new errors.Forbidden('You may not join this clan')
 
-  yield Clan.update {_id: clan._id}, {$addToSet: {members: req.user._id}}
-  yield User.update {_id: req.user._id}, {$addToSet: {clans: clan._id}}
-  res.send(200)
+  yield clan.update({$addToSet: {members: req.user._id}})
+  yield req.user.update({$addToSet: {clans: clan._id}})
+  res.send(clan.toObject({req}))
   AnalyticsLogEvent.logEvent req.user, 'Clan joined', clanID: clan._id, type: clan.get('type')
 
+  
+leaveClan = wrap (req, res) ->
+  clan = yield database.getDocFromHandle(req, Clan)
+  if not clan
+    throw new errors.NotFound('Clan not found.')
+    
+  if clan.get('ownerID')?.equals(req.user._id)
+    throw new errors.Forbidden('Owners may not leave their clans.')
+  yield clan.update({$pull: {members: req.user._id}})
+  yield req.user.update({$pull: {clans: clan._id}})
+  res.send(clan.toObject({req}))
+  AnalyticsLogEvent.logEvent req.user, 'Clan left', clanID: clan._id, type: clan.get('type')
+
+  
 module.exports = {
   deleteClan
   joinClan
+  leaveClan
 }

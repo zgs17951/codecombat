@@ -117,6 +117,7 @@ module.exports.setup = (app) ->
   
   app.delete('/db/clan/:handle', mw.auth.checkLoggedIn(), mw.clans.deleteClan)
   app.put('/db/clan/:handle/join', mw.auth.checkLoggedIn(), mw.clans.joinClan)
+  app.put('/db/clan/:handle/leave', mw.auth.checkLoggedIn(), mw.clans.leaveClan)
 
   app.post('/db/classroom', mw.classrooms.post)
   app.get('/db/classroom', mw.classrooms.fetchByCode, mw.classrooms.getByOwner)
