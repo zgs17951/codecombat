@@ -129,7 +129,7 @@ describe 'GET /db/clan/-/public', ->
     expect(res.statusCode).toBe(200)
 
     
-describe 'PUT /db/clan/-/join', ->
+describe 'PUT /db/clan/:handle/join', ->
   beforeEach utils.wrap ->
     @user = yield utils.initUser({stripe: {free: true}})
     yield utils.loginUser(@user)
@@ -137,8 +137,9 @@ describe 'PUT /db/clan/-/join', ->
     @url = utils.getUrl("/db/clan/#{@clan.id}/join")
     @privateClan = yield utils.makeClan({type: 'private'})
     @privateUrl = utils.getUrl("/db/clan/#{@privateClan.id}/join")
+    yield utils.clearModels([AnalyticsLogEvent])
 
-  it 'joins the clan idempotently', utils.wrap ->
+  it 'joins the clan idempotently and logs an event', utils.wrap ->
     user = yield utils.initUser()
     yield utils.loginUser(user)
     [res] = yield request.putAsync { @url, json: true }
@@ -149,6 +150,12 @@ describe 'PUT /db/clan/-/join', ->
     user = yield User.findById user.id
     expect(user.get('clans')?.length).toBe(1)
     expect(_.find user.get('clans'), (clanID) -> clan._id.equals clanID).toBeDefined()
+
+    events = yield AnalyticsLogEvent.find()
+    expect(events.length).toBe(1)
+    expect(events[0].get('event')).toBe('Clan joined')
+    expect(events[0].get('properties.clanID').equals(@clan._id)).toBe(true)
+    expect(events[0].get('properties.type')).toBe(@clan.get('type'))
 
     [res] = yield request.putAsync { @url, json: true }
     expect(res.statusCode).toBe(200)
@@ -289,7 +296,7 @@ describe 'PUT /db/clan/:clanHandle/remove/:memberHandle', ->
     expect(res.statusCode).toBe(403)
 
 
-fdescribe 'DELETE /db/clan/:handle', ->
+describe 'DELETE /db/clan/:handle', ->
 
   beforeEach utils.wrap ->
     @ownerUser = yield utils.initUser()
@@ -320,6 +327,7 @@ fdescribe 'DELETE /db/clan/:handle', ->
     expect(@joinerUser.get('clans').length).toBe(0)
     events = yield AnalyticsLogEvent.find()
     expect(events.length).toBe(1)
+    expect(events[0].get('event')).toBe('Clan deleted')
     expect(events[0].get('properties.clanID')).toBe(@clan.id)
     expect(events[0].get('properties.type')).toBe(@clan.get('type'))
 

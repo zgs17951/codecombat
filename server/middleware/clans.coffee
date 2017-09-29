@@ -16,13 +16,27 @@ deleteClan = wrap (req, res) ->
   memberIDs = clan.get('members')
   yield Clan.remove {_id: clan.get('_id')}
 
-  yield User.update {_id: {$in: memberIDs}}, {$pull: {clans: clan.get('_id')}}, {multi: true}
+  yield User.update {_id: {$in: memberIDs}}, {$pull: {clans: clan._id}}, {multi: true}
 
   yield clan.remove()
   res.status(204).end()
   AnalyticsLogEvent.logEvent req.user, 'Clan deleted', clanID: clan.id, type: clan.get('type')
-  
+
+
+joinClan = wrap (req, res) ->
+  clan = yield database.getDocFromHandle(req, Clan)
+  if not clan
+    throw new errors.NotFound('Clan not found.')
+
+  unless clan.get('type') is 'public' or req.user.isPremium()
+    throw new errors.Forbidden('You may not join this clan')
+
+  yield Clan.update {_id: clan._id}, {$addToSet: {members: req.user._id}}
+  yield User.update {_id: req.user._id}, {$addToSet: {clans: clan._id}}
+  res.send(200)
+  AnalyticsLogEvent.logEvent req.user, 'Clan joined', clanID: clan._id, type: clan.get('type')
 
 module.exports = {
   deleteClan
+  joinClan
 }
