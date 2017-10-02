@@ -64,10 +64,19 @@ getMemberAchievements = wrap (req, res) ->
   cleandocs = (doc.toObject({req}) for doc in documents)
   res.send(cleandocs)
 
-        
+
+getMembers = wrap (req, res) ->
+  clan = yield database.getDocFromHandle(req, Clan)
+  if not clan
+    throw new errors.NotFound('Clan not found.')
+  memberIDs = _.map clan.get('members') ? [], (memberID) -> memberID.toHexString?() or memberID
+  users = yield User.find {_id: {$in: memberIDs}}, 'name nameLower points heroConfig.thangType', {limit: memberLimit}
+  cleandocs = (user.toObject() for user in users)
+  res.send(cleandocs)
   
 module.exports = {
   getMemberAchievements
+  getMembers
   deleteClan
   joinClan
   leaveClan

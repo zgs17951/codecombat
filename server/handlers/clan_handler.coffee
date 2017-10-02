@@ -38,22 +38,11 @@ ClanHandler = class ClanHandler extends Handler
 
 
   getByRelationship: (req, res, args...) ->
-    return @getMembers(req, res, args[0]) if args[1] is 'members'
     return @getMemberSessions(req, res, args[0]) if args[1] is 'member_sessions'
     return @getPublicClans(req, res) if args[1] is 'public'
     return @removeMember(req, res, args[0], args[2]) if args.length is 3 and args[1] is 'remove'
     super(arguments...)
 
-
-  getMembers: (req, res, clanID) ->
-    Clan.findById clanID, (err, clan) =>
-      return @sendDatabaseError(res, err) if err
-      return @sendNotFoundError(res) unless clan
-      memberIDs = _.map clan.get('members') ? [], (memberID) -> memberID.toHexString?() or memberID
-      User.find {_id: {$in: memberIDs}}, 'name nameLower points heroConfig.thangType', {limit: memberLimit}, (err, users) =>
-        return @sendDatabaseError(res, err) if err
-        cleandocs = (UserHandler.formatEntity(req, doc) for doc in users)
-        @sendSuccess(res, cleandocs)
 
   getMemberSessions: (req, res, clanID) ->
     # TODO: restrict information returned based on clan type

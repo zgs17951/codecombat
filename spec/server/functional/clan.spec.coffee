@@ -399,3 +399,28 @@ describe 'GET /db/clan/:handle/member_achievements', ->
     [res] = yield request.getAsync({url, json: true})
     expect(res.statusCode).toBe(200)
     expect(res.body.length).toBe(200)
+
+    
+describe 'GET /db/clan/:handle/members', ->
+  beforeEach utils.wrap ->
+    @ownerUser = yield utils.initUser()
+    yield utils.loginUser(@ownerUser)
+    @clan = yield utils.makeClan({type: 'public'})
+    @url = utils.getUrl("/db/clan/#{@clan.id}/join")
+    @joinerUser = yield utils.initUser()
+    yield utils.loginUser(@joinerUser)
+    url = utils.getUrl("/db/clan/#{@clan.id}/join")
+    [res] = yield request.putAsync { url, json: true }
+    expect(res.statusCode).toBe(200)
+
+  it 'returns a list of users, only including properties: name, nameLower, points, heroConfig.thangType', utils.wrap ->
+    url = utils.getUrl("/db/clan/#{@clan.id}/members")
+    [res] = yield request.getAsync({url, json: true})
+    expect(res.statusCode).toBe(200)
+    expect(res.body.length).toBe(2)
+    expect(_.find(res.body, { _id: @joinerUser.id })).toBeTruthy()
+    expect(_.find(res.body, { _id: @ownerUser.id })).toBeTruthy()
+    for user in res.body
+      keys = _.keys(user)
+      anythingElse = _.difference(keys, ['name', 'nameLower', 'points', 'heroConfig', '_id'])
+      expect(anythingElse.length).toBe(0)
