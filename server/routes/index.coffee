@@ -121,6 +121,7 @@ module.exports.setup = (app) ->
   app.get('/db/clan/:handle/member_achievements', mw.clans.getMemberAchievements)
   app.get('/db/clan/:handle/members', mw.clans.getMembers)
   app.get('/db/clan/:handle/member_sessions', mw.clans.getMemberSessions)
+  app.get('/db/clan/:handle/public', mw.clans.getPublicClans)
 
   app.post('/db/classroom', mw.classrooms.post)
   app.get('/db/classroom', mw.classrooms.fetchByCode, mw.classrooms.getByOwner)

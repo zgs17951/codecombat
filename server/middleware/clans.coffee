@@ -94,12 +94,22 @@ getMemberSessions = wrap (req, res) ->
   sessions = yield LevelSession.find {creator: {$in: memberIDs}}, 'changed codeLanguage creator creatorName levelID levelName playtime state submittedCodeLanguage'
   cleandocs = (doc.toObject({req}) for doc in sessions)
   res.send(cleandocs)
+  
+  
+getPublicClans = wrap (req, res) ->
+  query = [{ $match : {type : 'public'} }]
+  query.push {$project : {_id: 1, name: 1, slug: 1, type: 1, description: 1, memberCount: {$size: "$members"}, ownerID: 1}}
+  query.push {$sort: { memberCount: -1, _id: -1 }}
+  query.push {$limit: 100}
+  clans = yield Clan.aggregate(query)
+  res.send(clans)
 
 
 module.exports = {
   getMemberAchievements
   getMembers
   getMemberSessions
+  getPublicClans
   deleteClan
   joinClan
   leaveClan

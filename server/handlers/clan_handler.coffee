@@ -38,20 +38,8 @@ ClanHandler = class ClanHandler extends Handler
 
 
   getByRelationship: (req, res, args...) ->
-    return @getPublicClans(req, res) if args[1] is 'public'
     return @removeMember(req, res, args[0], args[2]) if args.length is 3 and args[1] is 'remove'
     super(arguments...)
-
-
-  getPublicClans: (req, res) ->
-    # Return 100 public clans, sorted by member count, created date
-    query = [{ $match : {type : 'public'} }]
-    query.push {$project : {_id: 1, name: 1, slug: 1, type: 1, description: 1, memberCount: {$size: "$members"}, ownerID: 1}}
-    query.push {$sort: { memberCount: -1, _id: -1 }}
-    query.push {$limit: 100}
-    Clan.aggregate(query).exec (err, documents) =>
-      return @sendDatabaseError(res, err) if err
-      @sendSuccess(res, documents)
 
   removeMember: (req, res, clanID, memberID) ->
     return @sendForbiddenError(res) unless req.user? and not req.user.isAnonymous()
