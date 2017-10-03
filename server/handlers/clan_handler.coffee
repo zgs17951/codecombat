@@ -38,29 +38,10 @@ ClanHandler = class ClanHandler extends Handler
 
 
   getByRelationship: (req, res, args...) ->
-    return @getMemberSessions(req, res, args[0]) if args[1] is 'member_sessions'
     return @getPublicClans(req, res) if args[1] is 'public'
     return @removeMember(req, res, args[0], args[2]) if args.length is 3 and args[1] is 'remove'
     super(arguments...)
 
-
-  getMemberSessions: (req, res, clanID) ->
-    # TODO: restrict information returned based on clan type
-    Clan.findById clanID, (err, clan) =>
-      return @sendDatabaseError(res, err) if err
-      return @sendNotFoundError(res) unless clan
-      return @sendForbiddenError(res) unless clan.get('dashboardType') is 'premium'
-      memberIDs = _.map clan.get('members') ? [], (memberID) -> memberID.toHexString?() or memberID
-      User.find {_id: {$in: memberIDs}}, 'name', {limit: memberLimit}, (err, users) =>
-        return @sendDatabaseError(res, err) if err
-        memberIDs = []
-        for user in users
-          memberIDs.push user.id
-          break unless memberIDs.length < memberLimit
-        LevelSession.find {creator: {$in: memberIDs}}, 'changed codeLanguage creator creatorName levelID levelName playtime state submittedCodeLanguage', (err, documents) =>
-          return @sendDatabaseError(res, err) if err?
-          cleandocs = (LevelSessionHandler.formatEntity(req, doc) for doc in documents)
-          @sendSuccess(res, cleandocs)
 
   getPublicClans: (req, res) ->
     # Return 100 public clans, sorted by member count, created date

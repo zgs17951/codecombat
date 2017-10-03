@@ -366,7 +366,6 @@ describe 'GET /db/clan/:handle/member_achievements', ->
     @ownerUser = yield utils.initUser()
     yield utils.loginUser(@ownerUser)
     @clan = yield utils.makeClan({type: 'public'})
-    @url = utils.getUrl("/db/clan/#{@clan.id}/join")
     @joinerUser = yield utils.initUser()
     yield utils.loginUser(@joinerUser)
     url = utils.getUrl("/db/clan/#{@clan.id}/join")
@@ -406,7 +405,6 @@ describe 'GET /db/clan/:handle/members', ->
     @ownerUser = yield utils.initUser()
     yield utils.loginUser(@ownerUser)
     @clan = yield utils.makeClan({type: 'public'})
-    @url = utils.getUrl("/db/clan/#{@clan.id}/join")
     @joinerUser = yield utils.initUser()
     yield utils.loginUser(@joinerUser)
     url = utils.getUrl("/db/clan/#{@clan.id}/join")
@@ -424,3 +422,38 @@ describe 'GET /db/clan/:handle/members', ->
       keys = _.keys(user)
       anythingElse = _.difference(keys, ['name', 'nameLower', 'points', 'heroConfig', '_id'])
       expect(anythingElse.length).toBe(0)
+
+      
+describe 'GET /db/clan/:handle/member_sessions', ->
+  beforeEach utils.wrap ->
+    @ownerUser = yield utils.initUser({'stripe.free': true})
+    yield utils.loginUser(@ownerUser)
+    @clan = yield utils.makeClan({type: 'private'})
+    @url = utils.getUrl("/db/clan/#{@clan.id}/member_sessions")
+    @joinerUser = yield utils.initUser({'stripe.free': true})
+    yield utils.loginUser(@joinerUser)
+    url = utils.getUrl("/db/clan/#{@clan.id}/join")
+    [res] = yield request.putAsync { url, json: true }
+    expect(res.statusCode).toBe(200)
+    @adminUser = yield utils.initAdmin()
+    yield utils.loginUser(@adminUser)
+    @level = yield utils.makeLevel()
+    @ownerUserSession = yield utils.makeLevelSession({code:'...', submittedCode: '...'}, { @level, creator: @ownerUser })
+    @joinerUserSession = yield utils.makeLevelSession({code:'...', submittedCode: '...'}, { @level, creator: @joinerUser })
+    
+  it 'returns all level sessions for members of the clan, but without code', utils.wrap ->
+    [res] = yield request.getAsync({@url, json: true})
+    expect(res.statusCode).toBe(200)
+    expect(res.body.length).toBe(2)
+    expect(_.find(res.body, { _id: @joinerUserSession.id })).toBeTruthy()
+    expect(_.find(res.body, { _id: @ownerUserSession.id })).toBeTruthy()
+    for session in res.body
+      expect(session.code).toBeUndefined()
+      expect(session.sessionCode).toBeUndefined()
+    
+  it 'returns 403 if the clan is public', utils.wrap ->
+    yield utils.loginUser(@ownerUser)
+    clan = yield utils.makeClan({type: 'public'})
+    url = utils.getUrl("/db/clan/#{clan.id}/member_sessions")
+    [res] = yield request.getAsync { url, json: true }
+    expect(res.statusCode).toBe(403)

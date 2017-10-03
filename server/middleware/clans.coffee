@@ -5,6 +5,7 @@ Clan = require '../models/Clan'
 User = require '../models/User'
 AnalyticsLogEvent = require '../models/AnalyticsLogEvent'
 EarnedAchievement = require '../models/EarnedAchievement'
+LevelSession = require '../models/LevelSession'
 
 memberLimit = 200
 
@@ -74,9 +75,31 @@ getMembers = wrap (req, res) ->
   cleandocs = (user.toObject() for user in users)
   res.send(cleandocs)
   
+  
+getMemberSessions = wrap (req, res) ->
+  # TODO: restrict information returned based on clan type
+  clan = yield database.getDocFromHandle(req, Clan)
+  if not clan
+    throw new errors.NotFound('Clan not found.')
+  
+  unless clan.get('dashboardType') is 'premium'
+    throw new errors.Forbidden()
+    
+  memberIDs = _.map clan.get('members') ? [], (memberID) -> memberID.toHexString?() or memberID
+  users = yield User.find {_id: {$in: memberIDs}}, 'name', {limit: memberLimit}
+  memberIDs = []
+  for user in users
+    memberIDs.push user.id
+    break unless memberIDs.length < memberLimit
+  sessions = yield LevelSession.find {creator: {$in: memberIDs}}, 'changed codeLanguage creator creatorName levelID levelName playtime state submittedCodeLanguage'
+  cleandocs = (doc.toObject({req}) for doc in sessions)
+  res.send(cleandocs)
+
+
 module.exports = {
   getMemberAchievements
   getMembers
+  getMemberSessions
   deleteClan
   joinClan
   leaveClan
