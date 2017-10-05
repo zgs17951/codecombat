@@ -75,6 +75,7 @@ describe 'PUT /db/clan', ->
     json = clan.toObject()
     json.name = 'new name' + _.uniqueId()
     json.description = 'new description'
+    url = utils.getUrl("/db/clan/#{clan.id}")
     [res] = yield request.putAsync { url , json }
     expect(res.body.name).toEqual(json.name)
     expect(res.body.description).toEqual(json.description)

@@ -23,6 +23,19 @@ postClan = wrap (req, res) ->
   res.status(201).send(clan.toObject({req}))
   
 
+putClan = wrap (req, res) ->
+  clan = yield database.getDocFromHandle(req, Clan)
+  if not clan
+    throw new errors.NotFound('Document not found.')
+
+  unless clan.get('ownerID').equals(req.user._id)
+    throw new errors.Forbidden()
+  database.assignBody(req, clan)
+  database.validateDoc(clan)
+  clan = yield clan.save()
+  res.status(200).send(clan.toObject())
+  
+
 deleteClan = wrap (req, res) ->
   clan = yield database.getDocFromHandle(req, Clan)
   if not clan
@@ -151,5 +164,6 @@ module.exports = {
   joinClan
   leaveClan
   postClan
+  putClan
   removeMember
 }

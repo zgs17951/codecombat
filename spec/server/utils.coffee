@@ -400,7 +400,7 @@ module.exports = mw =
   makeClan: (data={}, sources={}) -> co ->
     data.name ?= _.uniqueId('My Clan')
     [res] = yield request.postAsync {url: mw.getUrl('/db/clan'), json: data }
-    expect(res.statusCode).toBe(200)
+    expect(res.statusCode).toBe(201)
     clan = yield Clan.findById(res.body._id)
     return clan
     
