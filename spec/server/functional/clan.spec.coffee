@@ -252,6 +252,7 @@ describe 'PUT /db/clan/:clanHandle/remove/:memberHandle', ->
     expect(@clan.get('members').length).toBe(2)
     expect(@ownerUser.get('clans').length).toBe(1)
     expect(@joinerUser.get('clans').length).toBe(1)
+    yield utils.clearModels([AnalyticsLogEvent])
     
 
   it 'removes members idempotently', utils.wrap ->
@@ -264,6 +265,12 @@ describe 'PUT /db/clan/:clanHandle/remove/:memberHandle', ->
     expect(clan.get('members')[0]).toEqual(@ownerUser._id)
     joinerUser = yield User.findById @joinerUser.id
     expect(joinerUser.get('clans').length).toEqual(0)
+
+    events = yield AnalyticsLogEvent.find()
+    expect(events.length).toBe(1)
+    expect(events[0].get('event')).toBe('Clan member removed')
+    expect(events[0].get('properties.clanID').equals(@clan._id)).toBe(true)
+    expect(events[0].get('properties.type')).toBe(@clan.get('type'))
 
     [res] = yield request.putAsync { url, json: true }
     expect(res.statusCode).toBe(200)

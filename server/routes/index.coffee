@@ -122,6 +122,7 @@ module.exports.setup = (app) ->
   app.get('/db/clan/:handle/members', mw.clans.getMembers)
   app.get('/db/clan/:handle/member_sessions', mw.clans.getMemberSessions)
   app.get('/db/clan/:handle/public', mw.clans.getPublicClans)
+  app.put('/db/clan/:handle/remove/:memberHandle', mw.auth.checkLoggedIn(), mw.clans.removeMember)
 
   app.post('/db/classroom', mw.classrooms.post)
   app.get('/db/classroom', mw.classrooms.fetchByCode, mw.classrooms.getByOwner)

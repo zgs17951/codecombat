@@ -105,6 +105,29 @@ getPublicClans = wrap (req, res) ->
   res.send(clans)
 
 
+removeMember = wrap (req, res) ->
+  clan = yield database.getDocFromHandle(req, Clan)
+  if not clan
+    throw new errors.NotFound('Clan not found.')
+
+  member = yield database.getDocFromHandle(req, User, {handleName: 'memberHandle'})
+  if not member
+    throw new errors.NotFound('Member not found.')
+
+  unless req.user?.isAdmin() or clan.get('ownerID')?.equals(req.user._id)
+    throw new errors.Forbidden('You must be an admin or owner to remove a member.')
+
+  if clan.get('ownerID').equals member._id
+    throw new errors.Forbidden('The owner may not remove themself from their clan.')
+  
+  yield clan.update({$pull: {members: member._id}})
+  yield member.update({$pull: {clans: clan._id}})
+  res.send(clan.toObject({req}))
+  
+  AnalyticsLogEvent.logEvent req.user, 'Clan member removed', clanID: clan._id, type: clan.get('type'), memberID: member._id
+
+  
+
 module.exports = {
   getMemberAchievements
   getMembers
@@ -113,4 +136,5 @@ module.exports = {
   deleteClan
   joinClan
   leaveClan
+  removeMember
 }
