@@ -36,12 +36,12 @@ describe 'POST /db/clan', ->
       name: _.uniqueId('myclan')
       type: 'private'
     [res] = yield request.postAsync { url, json }
-    expect(res.statusCode).toBe(403)
+    expect(res.statusCode).toBe(402)
 
     user = yield utils.initUser({stripe: {free: true}})
     yield utils.loginUser(user)
     [res] = yield request.postAsync { url, json }
-    expect(res.statusCode).toBe(200)
+    expect(res.statusCode).toBe(201)
 
 
 
@@ -53,7 +53,7 @@ describe 'POST /db/clan', ->
       type: 'public'
       description: 'A description'
     [res] = yield request.postAsync { url, json }
-    expect(res.statusCode).toBe(200)
+    expect(res.statusCode).toBe(201)
     clan = yield Clan.findById(res.body._id)
     expect(clan.get('type')).toEqual(json.type)
     expect(clan.get('name')).toEqual(json.name)

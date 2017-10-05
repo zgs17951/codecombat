@@ -9,6 +9,20 @@ LevelSession = require '../models/LevelSession'
 
 memberLimit = 200
 
+
+postClan = wrap (req, res) ->
+  clan = database.initDoc(req, Clan)
+  database.assignBody(req, clan)
+  database.validateDoc(clan)
+  clan.set 'ownerID', req.user._id
+  clan.set 'members', [req.user._id]
+  clan.set 'dashboardType', 'premium' if clan.get('type') is 'private'
+  if clan.get('type') is 'private' and not req.user.isPremium()
+    throw new errors.PaymentRequired()
+  clan = yield clan.save()
+  res.status(201).send(clan.toObject({req}))
+  
+
 deleteClan = wrap (req, res) ->
   clan = yield database.getDocFromHandle(req, Clan)
   if not clan
@@ -136,5 +150,6 @@ module.exports = {
   deleteClan
   joinClan
   leaveClan
+  postClan
   removeMember
 }

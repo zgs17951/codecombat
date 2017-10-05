@@ -115,6 +115,7 @@ module.exports.setup = (app) ->
   app.post('/db/campaign/:handle/watchers', mw.patchable.joinWatchers(Campaign))
   app.delete('/db/campaign/:handle/watchers', mw.patchable.leaveWatchers(Campaign))
   
+  app.post('/db/clan', mw.auth.checkLoggedIn(), mw.clans.postClan)
   app.delete('/db/clan/:handle', mw.auth.checkLoggedIn(), mw.clans.deleteClan)
   app.put('/db/clan/:handle/join', mw.auth.checkLoggedIn(), mw.clans.joinClan)
   app.put('/db/clan/:handle/leave', mw.auth.checkLoggedIn(), mw.clans.leaveClan)
