@@ -2127,7 +2127,7 @@ module.exports = nativeDescription: "简体中文", englishDescription: "Chinese
 #    basic_html_attributes: "Basic HTML Attributes"
 #    basic_html_tags: "Basic HTML Tags"
     basic_syntax: "基本语法"
-#    binary: "Binary"
+    binary: "二进制"
 #    boolean_and: "Boolean And"
 #    boolean_equality: "Boolean Equality"
 #    boolean_greater_less: "Boolean Greater/Less"
